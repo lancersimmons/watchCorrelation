@@ -1,2 +1,1 @@
-# watchCorrelation
-Correlating data readings between Sony smartwatch and FitBit.
+Comparing data between Sony smartwatch and FitBit.
