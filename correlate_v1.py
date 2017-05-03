@@ -2,20 +2,42 @@ import os
 import re
 import datetime
 import time
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
 
 
 print("Opening heart rate file")
 
+## Pass in FitBit file, then motion
+
 heart_rate = []
 countHeartbeatMeasurements = 0
 
-start_time = datetime.datetime.strptime("2017-04-30 15:56:00", "%Y-%m-%d %H:%M:%S")
-actual_start_time = datetime.datetime.strptime("2017-04-30 15:56:00", "%Y-%m-%d %H:%M:%S")
-# end_time = datetime.datetime.strptime("2017-04-30 16:38:00", "%Y-%m-%d %H:%M:%S")
-end_time = datetime.datetime.strptime("2017-04-30 16:30:00", "%Y-%m-%d %H:%M:%S")
+## Lance Running
+# start_time = datetime.datetime.strptime("2017-04-30 15:56:00", "%Y-%m-%d %H:%M:%S")
+# actual_start_time = datetime.datetime.strptime("2017-04-30 15:56:00", "%Y-%m-%d %H:%M:%S")
+# end_time = datetime.datetime.strptime("2017-04-30 16:30:00", "%Y-%m-%d %H:%M:%S")
+
+## Lance Sitting
+# start_time = datetime.datetime.strptime("2017-04-30 19:28:00", "%Y-%m-%d %H:%M:%S")
+# actual_start_time = datetime.datetime.strptime("2017-04-30 19:28:00", "%Y-%m-%d %H:%M:%S")
+# end_time = datetime.datetime.strptime("2017-04-30 20:15:00", "%Y-%m-%d %H:%M:%S")
+
+## Anudeep Running
+start_time = datetime.datetime.strptime("2017-05-01 16:01:00", "%Y-%m-%d %H:%M:%S")
+actual_start_time = datetime.datetime.strptime("2017-05-01 16:01:00", "%Y-%m-%d %H:%M:%S")
+end_time = datetime.datetime.strptime("2017-05-01 16:33:00", "%Y-%m-%d %H:%M:%S")
+
+
+## Anudeep Sitting
+# start_time = datetime.datetime.strptime("2017-05-01 15:23:00", "%Y-%m-%d %H:%M:%S")
+# actual_start_time = datetime.datetime.strptime("2017-05-01 15:23:00", "%Y-%m-%d %H:%M:%S")
+# end_time = datetime.datetime.strptime("2017-05-01 15:56:00", "%Y-%m-%d %H:%M:%S")
+
 
 # First, we'll handle FitBit data
-with open("Lance's_Data.csv") as file1:
+with open(sys.argv[1]) as file1:
     for line in file1:
         temp = re.split(",", line)
         lineTime = datetime.datetime.strptime(temp[0], "%Y-%m-%d %H:%M:%S")
@@ -48,7 +70,7 @@ count = 0
 start_time = 0
 
 # Handling SmartWatch data
-with open("sony_watch.txt") as file1:
+with open(sys.argv[2]) as file1:
     for line in file1:
         temp = re.split(' |,', line)
         temp = [float(e) for e in temp]
@@ -69,8 +91,9 @@ with open("sony_watch.txt") as file1:
             
         count = count + 1
 
-# for x in acc_data:
+# for x in gyro_data:
 #     print(x)
+# exit()
 
 
 
@@ -106,16 +129,6 @@ with open("sony_watch.txt") as file1:
 # print(maxY)
 # print(minZ)
 # print(maxZ)
-# exit()
-
-
-
-
-
-
-
-
-
 # exit()
 
 
@@ -177,6 +190,14 @@ for reading in gyro_data:
     count = count + 1
 # exit()
 
+## Replace rotation values with magnitududes of change
+# for index in range(0, len(gyro_data)-1):
+#     gyro_data[index][3] = gyro_diff_data[index][3]
+#     gyro_data[index][4] = gyro_diff_data[index][4]
+#     gyro_data[index][5] = gyro_diff_data[index][5]
+
+
+
 
 
 
@@ -192,9 +213,9 @@ for i in range(0, len(heart_rate)):
     temp_var = []
 
     while count < len(acc_data) and acc_data[count][0] < curr_time_stamp :
-        x += acc_data[count][3]
-        y += acc_data[count][4]
-        z += acc_data[count][5]
+        x += abs(acc_data[count][3])
+        y += abs(acc_data[count][4])
+        z += abs(acc_data[count][5])
         count += 1
     temp_var.append(x/(count-past_count-1)) 
     temp_var.append(y/(count-past_count-1))
@@ -217,14 +238,21 @@ for i in range(0, len(heart_rate)):
     temp_var = []
 
     while count < len(gyro_data) and gyro_data[count][0] < curr_time_stamp :
-        x += gyro_data[count][3]
-        y += gyro_data[count][4]
-        z += gyro_data[count][5]
+        x += abs(gyro_data[count][3])
+        y += abs(gyro_data[count][4])
+        z += abs(gyro_data[count][5])
         count += 1
-    temp_var.append(x/(count-past_count-1)) 
-    temp_var.append(y/(count-past_count-1))
-    temp_var.append(z/(count-past_count-1))
-    temp_var.append(count-past_count-1) 
+
+    if (count-past_count-1) > 0:
+        temp_var.append(x/(count-past_count-1)) 
+        temp_var.append(y/(count-past_count-1))
+        temp_var.append(z/(count-past_count-1))
+        temp_var.append(count-past_count-1) 
+    else:
+        temp_var.append(0.0) 
+        temp_var.append(0.0)
+        temp_var.append(0.0)
+        temp_var.append(count-past_count-1) 
     temp_var.append(curr_time_stamp)
     coordinated_gyro.append(temp_var) 
     past_count = count      
@@ -246,38 +274,97 @@ for i in range(0, len(heart_rate)):
     temp.append(coordinated_gyro[i][1])
     temp.append(coordinated_gyro[i][2])
     temp.append(heart_rate[i][1])
-    final_data.append(temp)  # 1st col is time elapsed, 2-4 are x,y,z of accelerometer, 5-7 are x,y,z of gyroscope, 8 is heart rate 
+    final_data.append(temp)  
+    # 0th col is time elapsed,
+    # 1-3 are x,y,z of accelerometer,
+    # 4-6 are x,y,z of gyroscope,
+    # 7th is heart rate
+
 #print(count, len(gyro_data), acc_count, len(acc_data))
 
-for x in final_data:
-    print(x)
-    time.sleep(0.05)
+# for reading in final_data:
+#     print(reading)
+#     time.sleep(0.05)
 
 
 
-import matplotlib.pyplot as plt
-from pylab import *
- 
-# startign with arg1, plot arg2 items with step arg3
-t = arange(0.0, 20.0, 1)
+
+graph_x_values = []
+graph_y_values = []
+
+print("Processing final_data")
+for reading in final_data:
+
+    averageAccelorometerMagnitude = (abs(reading[1]) + abs(reading[2]) + abs(reading[3])) / 3.0
+    averageGyroscopeMagnitude = (abs(reading[4]) + abs(reading[5]) + abs(reading[6])) / 3.0
+
+    # print readings(x,y,z), average magnitude, largest magnitude
+    # print("   ", reading[1], reading[2], reading[3])
+    # print(averageAccelorometerMagnitude)
+    # print(max(abs(reading[1]), abs(reading[2]), abs(reading[3])))
+    # time.sleep(0.20)
+
+    graph_x_values.append(reading[7])
+    graph_y_values.append(abs(reading[5]))
+    # graph_y_values.append(averageAccelorometerMagnitude)
+    # graph_y_values.append(averageGyroscopeMagnitude)
+    print(reading[7])
+    print(averageAccelorometerMagnitude)
+    print()
 
 
-s = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+# plt.plot(np.array(graph_x_values), np.array(graph_y_values))
+plt.scatter(graph_x_values, graph_y_values)
+plt.autoscale(enable=True, axis=u'both', tight=False)
 
-s2 = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
- 
-plt.subplot(2, 1, 1)
+# line of best fit
+plt.plot(graph_x_values, np.poly1d(np.polyfit(graph_x_values, graph_y_values, 1))(graph_x_values))
 
-#plot with x and y axes
-plt.plot(t, s)
-plt.ylabel('Value')
-plt.title('First chart')
+plt.xlabel('Heart Rate')
+plt.ylabel('Magnitude (accelerometer)')
+plt.title('Chart Title')
 plt.grid(True)
- 
-plt.subplot(2, 1, 2)
-plt.plot(t, s2)
-plt.xlabel('Item (s)')
-plt.ylabel('Value')
-plt.title('Second chart')
-plt.grid(True)
+plt.draw() # non-blocking
+
+
+degree = 1
+results = {}
+
+coeffs = np.polyfit(graph_x_values, graph_y_values, degree)
+ # Polynomial Coefficients
+results['polynomial'] = coeffs.tolist()
+
+correlation = np.corrcoef(graph_x_values, graph_y_values)[0,1]
+
+ # r
+results['correlation'] = correlation
+ # r-squared
+results['determination'] = correlation**2
+
+print(results)
+
 plt.show()
+
+ 
+# # starting with arg1, plot arg2 items with step arg3
+# t = arange(0.0, 20.0, 1)
+
+
+# s = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+
+# s2 = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+ 
+
+# plt.subplot(2, 1, 1)
+# plt.plot(t, s)          #plot with x and y axes
+# plt.ylabel('Value')
+# plt.title('First chart')
+# plt.grid(True)
+ 
+# plt.subplot(2, 1, 2)
+# plt.plot(t, s2)
+# plt.xlabel('Item (s)')
+# plt.ylabel('Value')
+# plt.title('Second chart')
+# plt.grid(True)
+# plt.show()
